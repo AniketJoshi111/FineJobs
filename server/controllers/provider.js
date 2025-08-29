@@ -342,3 +342,47 @@ exports.rejectApplicant = (req, res, next) => {
       next(err);
     });
 };
+
+exports.postShortlist = async (req, res, next) => {
+  const applicantId = req.params.applicantId;
+
+  try {
+  
+    const applicant = await Applicant.findById(applicantId)
+      .populate('userId') 
+      .populate('jobId');  
+
+    if (!applicant) {
+      const error = new Error('Applicant not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // 2. Update the applicant's status
+    applicant.status = 'shortlisted';
+    await applicant.save();
+
+    
+    if (applicant.userId && applicant.userId.email) {
+      await transporter.sendMail({
+        to: applicant.userId.email,
+        from: process.env.EMAIL_USER,
+        subject: `Congratulations! You've been shortlisted for ${applicant.jobId.title}`,
+        html: `
+          <h1>Hello ${applicant.name},</h1>
+          <p>We are pleased to inform you that you have been shortlisted for the position of <strong>${applicant.jobId.title}</strong>.</p>
+          <p>The hiring manager will be in touch with the next steps soon.</p>
+          <p>Best regards,<br/>The Hiring Team</p>
+        `
+      });
+    }
+
+    res.status(200).json({ message: 'Applicant shortlisted successfully and email sent.' });
+
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};

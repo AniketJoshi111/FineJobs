@@ -75,34 +75,49 @@ exports.getUsers = (req, res, next) => {
     });
 };
 
-exports.postUser = (req, res, next) => {
+exports.postUser = async (req, res, next) => { 
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    const error = new Error("Validation failed");
+    const error = new Error('Validation failed');
     error.statusCode = 422;
     error.data = errors.array();
-    throw error;
+   
+    return next(error);
   }
 
-  const password = req.body.password;
+  const { name, email, password, role } = req.body;
 
-  bcryptjs
-    .hash(password, 12)
-    .then((hashedPw) => {
-      const newUser = new User({ ...req.body, password: hashedPw });
-      return newUser.save();
-    })
-    .then((user) => {
-      res.status(201).json({ message: "User Added Successfully!" });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+  try { 
+    const hashedPassword = await bcryptjs.hash(password, 12);
+
+    const newUser = new User({
+      name: name,
+      email: email,
+      password: hashedPassword,
+      role: role
     });
+
+    const savedUser = await newUser.save();
+
+    // Send a welcome email after the user is successfully saved
+    await transporter.sendMail({
+      to: email,
+      from: process.env.EMAIL_USER, // Your email from the .env file
+      subject: 'Signup Successful! Welcome aboard!',
+      html: `<h1>Welcome, ${name}!</h1><p>You have successfully signed up to the Job Portal.</p>`
+    });
+
+    res.status(201).json({ message: 'User Added Successfully!', userId: savedUser._id });
+    
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err); // Pass any errors to the Express error handler
+  }
 };
+
 
 exports.getUser = (req, res, next) => {
   const userId = req.params.userId;
@@ -127,40 +142,61 @@ exports.getUser = (req, res, next) => {
     });
 };
 
-exports.editUser = (req, res, next) => {
+exports.editUser = async (req, res, next) => { 
   const userId = req.params.userId;
-
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    const error = new Error("Validation failed");
+    const error = new Error('Validation failed');
     error.statusCode = 422;
     error.data = errors.array();
-    throw error;
+    return next(error); 
   }
 
+  
   if (userId === req.userId) {
-    const error = new Error("Cannot edit the current User");
-    error.statusCode = 401;
-    throw error;
+    const error = new Error('You cannot edit your own user account via this route.');
+    error.statusCode = 403; 
+    return next(error);
   }
 
-  User.findByIdAndUpdate(userId, req.body, { useFindAndModify: false })
-    .then((data) => {
-      if (!data) {
-        res.status(404).json({
-          message: `Cannot update user with id=${id}. Maybe user was not found!`,
-        });
-      } else
-        res.status(200).json({ message: "User was updated successfully." });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+  try { 
+    const { name, email, role } = req.body;
+
+    // Find the user first to ensure they exist
+    const user = await User.findById(userId);
+
+    if (!user) {
+      const error = new Error('Could not find user.');
+      error.statusCode = 404;
+      throw error; 
+    }
+
+    // Update user properties
+    user.name = name;
+    user.email = email;
+    user.role = role;
+
+    const updatedUser = await user.save();
+
+    //Send a notification email after the update is successful
+    await transporter.sendMail({
+      to: updatedUser.email,
+      from: process.env.EMAIL_USER,
+      subject: 'Your Account Details Have Been Updated',
+      html: `<h1>Hi ${updatedUser.name},</h1><p>An administrator has updated your account profile on the Job Portal.</p>`,
     });
+
+    res.status(200).json({ message: 'User updated successfully.', user: updatedUser });
+
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err); // Pass any errors to the Express error handler
+  }
 };
+
 
 exports.deleteUser = (req, res, next) => {
   const userId = req.params.userId;
