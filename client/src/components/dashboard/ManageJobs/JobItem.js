@@ -11,7 +11,6 @@ const JobItem = (props) => {
         },
       })
       .then((res) => {
-        // console.log(res.data);
         props.onEdit(res.data.job);
       })
       .catch((err) => console.log(err));

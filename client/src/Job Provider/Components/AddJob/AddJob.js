@@ -6,6 +6,7 @@ import classes from "./AddJob.module.css";
 
 import { TextField, SelectInput } from "./FormTypes";
 import * as Yup from "yup";
+
 export default function AddJob(props) {
   let initialValues = {
     title: "",
@@ -47,12 +48,6 @@ export default function AddJob(props) {
         validationSchema={validate}
         onSubmit={(values, { setSubmitting }) => {
           const editedValues = { ...props.jobInfo, ...values };
-          // setTimeout(() => {
-          //   alert(JSON.stringify(editedValues, null, 2));
-          //   setSubmitting(false);
-          // props.onAdd();
-          // history.push("/dashboard");
-          // }, 400);
           formSubmitHandler(editedValues, setSubmitting);
         }}
       >

@@ -3,9 +3,6 @@ import AdminCard from "./AdminCard";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
 
-// import userData from "../../../store/userData.json";
-// import jobData from "../../../store/jobData.json";
-
 const AdminCards = ({ stats, ...props }) => {
   return (
     <Row>
