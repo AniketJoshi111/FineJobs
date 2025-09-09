@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const Job = require("../models/job");
 
-exports.signup = (req, res, next) => {
+const signup = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -34,7 +34,7 @@ exports.signup = (req, res, next) => {
     });
 };
 
-exports.login = (req, res, next) => {
+const login = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const error = new Error("Validation Failed");
@@ -84,3 +84,9 @@ exports.login = (req, res, next) => {
       next(err);
     });
 };
+
+module.exports = {
+  signup,
+  login,
+};
+

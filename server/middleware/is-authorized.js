@@ -1,6 +1,6 @@
 const User = require("../models/user");
 
-exports.isAuthorized = (req, res, next) => {
+const isAuthorized = (req, res, next) => {
   User.findById(req.userId)
     .then((user) => {
       if (!user) {
@@ -19,7 +19,7 @@ exports.isAuthorized = (req, res, next) => {
     });
 };
 
-exports.isAdmin = (req, res, next) => {
+const isAdmin = (req, res, next) => {
   // console.log(req.role);
   if (req.role !== "Admin") {
     const err = new Error("Not Authorized");
@@ -28,7 +28,7 @@ exports.isAdmin = (req, res, next) => {
   }
   next();
 };
-exports.isProvider = (req, res, next) => {
+const isProvider = (req, res, next) => {
   if (req.role !== "Job Provider") {
     const err = new Error("Not Authorized");
     err.statusCode = 401;
@@ -36,11 +36,18 @@ exports.isProvider = (req, res, next) => {
   }
   next();
 };
-exports.isUser = (req, res, next) => {
+const isUser = (req, res, next) => {
   if (req.role !== "User") {
     const err = new Error("Not Authorized");
     err.statusCode = 401;
     next(err);
   }
   next();
+};
+
+module.exports = {
+  isAdmin,
+  isAuthorized,
+  isProvider,
+  isUser
 };

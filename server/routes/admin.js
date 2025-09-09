@@ -1,3 +1,4 @@
+// routes/admin.js
 const express = require("express");
 const { body } = require("express-validator");
 
@@ -9,162 +10,88 @@ const { isAuthorized, isAdmin } = require("../middleware/is-authorized");
 
 const router = express.Router();
 
-// user routes
+//  Middleware Utils 
+const adminMiddleware = [isAuthenticated, isAuthorized, isAdmin];
 
-router.get(
-  "/dashboard-stats",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  adminController.getStats
-);
-router.get(
-  "/dashboard-recents",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  adminController.getRecent
-);
-
-router.get(
-  "/users",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  adminController.getUsers
-);
-
-router.post(
-  "/add-user",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  [
-    body("name").trim().not().isEmpty(),
+const userValidationRules = {
+  create: [
+    body("name").trim().notEmpty().withMessage("Name is required"),
     body("email")
       .isEmail()
-      .custom((value, { req }) => {
-        return User.findOne({ email: value }).then((user) => {
-          if (user) {
-            return Promise.reject("User already Exists");
-          }
-        });
-      })
+      .withMessage("Valid email is required")
+      .custom((value) =>
+        User.findOne({ email: value }).then((user) => {
+          if (user) return Promise.reject("User already exists");
+        })
+      )
       .normalizeEmail(),
-    body("password").trim().isLength({ min: 6, max: 12 }),
-    body("age").isInt({ min: 18, max: 60 }),
+    body("password")
+      .trim()
+      .isLength({ min: 6, max: 12 })
+      .withMessage("Password must be 6–12 characters long"),
+    body("age")
+      .isInt({ min: 18, max: 60 })
+      .withMessage("Age must be between 18 and 60"),
     body("mobile")
       .trim()
-      .custom((value, { req }) => {
-        const mobile_pattern = /^[1-9]{1}[0-9]{9}$/;
-        if (!mobile_pattern.test(value)) {
-          return Promise.reject("Invalid Mobile Number");
+      .custom((value) => {
+        const mobilePattern = /^[1-9]{1}[0-9]{9}$/;
+        if (!mobilePattern.test(value)) {
+          return Promise.reject("Invalid mobile number");
         }
         return true;
       }),
-    body("gender").trim().not().isEmpty(),
-    body("qualification").trim().not().isEmpty(),
-    body("experience").trim().not().isEmpty(),
-    body("role").trim().not().isEmpty(),
+    body("gender").trim().notEmpty().withMessage("Gender is required"),
+    body("qualification").trim().notEmpty().withMessage("Qualification is required"),
+    body("experience").trim().notEmpty().withMessage("Experience is required"),
+    body("role").trim().notEmpty().withMessage("Role is required"),
   ],
-  adminController.postUser
-);
 
-router.get(
-  "/users/:userId",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  adminController.getUser
-);
-
-router.put(
-  "/edit-user/:userId",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  [
-    body("name").trim().not().isEmpty(),
-    body("age").isInt({ min: 18, max: 60 }),
+  update: [
+    body("name").trim().notEmpty().withMessage("Name is required"),
+    body("age")
+      .isInt({ min: 18, max: 60 })
+      .withMessage("Age must be between 18 and 60"),
     body("mobile")
       .trim()
-      .custom((value, { req }) => {
-        const mobile_pattern = /^[1-9]{1}[0-9]{9}$/;
-        if (!mobile_pattern.test(value)) {
-          return Promise.reject("Invalid Mobile Number");
+      .custom((value) => {
+        const mobilePattern = /^[1-9]{1}[0-9]{9}$/;
+        if (!mobilePattern.test(value)) {
+          return Promise.reject("Invalid mobile number");
         }
         return true;
       }),
-    body("gender").trim().not().isEmpty(),
-    body("qualification").trim().not().isEmpty(),
-    body("experience").trim().not().isEmpty(),
-    body("role").trim().not().isEmpty(),
+    body("gender").trim().notEmpty().withMessage("Gender is required"),
+    body("qualification").trim().notEmpty().withMessage("Qualification is required"),
+    body("experience").trim().notEmpty().withMessage("Experience is required"),
+    body("role").trim().notEmpty().withMessage("Role is required"),
   ],
-  adminController.editUser
-);
+};
 
-router.delete(
-  "/users/:userId",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  adminController.deleteUser
-);
+const jobValidationRules = [
+  body("title").trim().notEmpty().withMessage("Title is required"),
+  body("description").trim().notEmpty().withMessage("Description is required"),
+  body("startDate").trim().notEmpty().withMessage("Start date is required"),
+  body("endDate").trim().notEmpty().withMessage("End date is required"),
+  body("category").trim().notEmpty().withMessage("Category is required"),
+];
 
-// job routes
+// ---------------- Admin Dashboard Routes ----------------
+router.get("/dashboard-stats", adminMiddleware, adminController.getStats);
+router.get("/dashboard-recents", adminMiddleware, adminController.getRecent);
 
-router.get(
-  "/jobs",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  adminController.getJobs
-);
+// ---------------- User Management Routes ----------------
+router.get("/users", adminMiddleware, adminController.getUsers);
+router.post("/add-user", adminMiddleware, userValidationRules.create, adminController.postUser);
+router.get("/users/:userId", adminMiddleware, adminController.getUser);
+router.put("/edit-user/:userId", adminMiddleware, userValidationRules.update, adminController.editUser);
+router.delete("/users/:userId", adminMiddleware, adminController.deleteUser);
 
-router.post(
-  "/add-job",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  [
-    body("title").trim().not().isEmpty(),
-    body("description").trim().not().isEmpty(),
-    body("startDate").trim().not().isEmpty(),
-    body("endDate").trim().not().isEmpty(),
-    body("category").trim().not().isEmpty(),
-  ],
-  adminController.addJob
-);
-
-router.get(
-  "/jobs/:jobId",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  adminController.getJob
-);
-
-router.put(
-  "/edit-job/:jobId",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  [
-    body("title").trim().not().isEmpty(),
-    body("description").trim().not().isEmpty(),
-    body("startDate").trim().not().isEmpty(),
-    body("endDate").trim().not().isEmpty(),
-    body("category").trim().not().isEmpty(),
-  ],
-  adminController.editJob
-);
-
-router.delete(
-  "/jobs/:jobId",
-  isAuthenticated,
-  isAuthorized,
-  isAdmin,
-  adminController.deleteJob
-);
+// ---------------- Job Management Routes ----------------
+router.get("/jobs", adminMiddleware, adminController.getJobs);
+router.post("/add-job", adminMiddleware, jobValidationRules, adminController.addJob);
+router.get("/jobs/:jobId", adminMiddleware, adminController.getJob);
+router.put("/edit-job/:jobId", adminMiddleware, jobValidationRules, adminController.editJob);
+router.delete("/jobs/:jobId", adminMiddleware, adminController.deleteJob);
 
 module.exports = router;

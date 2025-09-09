@@ -1,5 +1,5 @@
+// routes/user.js
 const express = require("express");
-// const { body } = require("express-validator");
 
 const userController = require("../controllers/user");
 
@@ -9,30 +9,12 @@ const { isAuthorized, isUser } = require("../middleware/is-authorized");
 
 const router = express.Router();
 
-// job routes
+//  Middleware Utils 
+const userMiddleware = [isAuthenticated, isAuthorized, isUser];
 
-router.get(
-  "/jobsAvailable",
-  isAuthenticated,
-  isAuthorized,
-  isUser,
-  userController.getAvailableJobs
-);
-router.get(
-  "/jobsApplied",
-  isAuthenticated,
-  isAuthorized,
-  isUser,
-  userController.getAppliedJobs
-);
-
-router.post(
-  "/apply/:jobId",
-  isAuthenticated,
-  isAuthorized,
-  isUser,
-  isApply,
-  userController.applyJob
-);
+//Job Routes
+router.get("/jobsAvailable", userMiddleware, userController.getAvailableJobs);
+router.get("/jobsApplied", userMiddleware, userController.getAppliedJobs);
+router.post("/apply/:jobId", [...userMiddleware, isApply], userController.applyJob);
 
 module.exports = router;

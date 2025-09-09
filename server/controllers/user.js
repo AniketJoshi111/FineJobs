@@ -1,12 +1,10 @@
-// const { validationResult } = require("express-validator");
-
 const Job = require("../models/job");
 const Applicant = require("../models/applicant");
 
 const { clearResume } = require("../util/helper");
 const { dateFormatter } = require("../util/helper");
 
-exports.getAvailableJobs = (req, res, next) => {
+const getAvailableJobs = (req, res, next) => {
   let appliedJobs = [];
   Applicant.find({ userId: req.userId })
     .lean()
@@ -27,13 +25,13 @@ exports.getAvailableJobs = (req, res, next) => {
       next(err);
     });
 };
-exports.getAppliedJobs = (req, res, next) => {
+
+const getAppliedJobs = (req, res, next) => {
   let appliedJobs = [];
   const statusMap = new Map();
   Applicant.find({ userId: req.userId })
     .lean()
     .then((applicants) => {
-      // console.log(applicants);
       applicants.forEach((applicant) => {
         appliedJobs.push(applicant.jobId);
         statusMap.set(applicant.jobId.toString(), applicant.status);
@@ -57,7 +55,7 @@ exports.getAppliedJobs = (req, res, next) => {
     });
 };
 
-exports.applyJob = (req, res, next) => {
+const applyJob = (req, res, next) => {
   if (!req.file) {
     const err = new Error("Resume not Found");
     err.statusCode = 422;
@@ -88,7 +86,7 @@ exports.applyJob = (req, res, next) => {
       });
       return newApplicant.save();
     })
-    .then((result) => {
+    .then(() => {
       res.status(201).json({ message: "Successfully applied for the job!" });
     })
     .catch((err) => {
@@ -97,4 +95,10 @@ exports.applyJob = (req, res, next) => {
       }
       next(err);
     });
+};
+
+module.exports = {
+  getAvailableJobs,
+  getAppliedJobs,
+  applyJob,
 };

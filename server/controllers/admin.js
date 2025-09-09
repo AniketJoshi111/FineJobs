@@ -6,7 +6,7 @@ const Job = require("../models/job");
 const Applicant = require("../models/applicant");
 const { clearResume } = require("../util/helper");
 
-exports.getStats = (req, res, next) => {
+const getStats = (req, res, next) => {
   let providerCount;
   let jobCount;
   let applicantCount;
@@ -37,7 +37,7 @@ exports.getStats = (req, res, next) => {
     });
 };
 
-exports.getRecent = (req, res, next) => {
+const getRecent = (req, res, next) => {
   let recentUsers = [];
   let recentJobs = [];
   User.find({ _id: { $ne: req.userId } })
@@ -58,7 +58,7 @@ exports.getRecent = (req, res, next) => {
     });
 };
 
-exports.getUsers = (req, res, next) => {
+const getUsers = (req, res, next) => {
   User.find({ _id: { $ne: req.userId } })
     .lean()
     .then((users) => {
@@ -75,7 +75,7 @@ exports.getUsers = (req, res, next) => {
     });
 };
 
-exports.postUser = async (req, res, next) => { 
+const postUser = async (req, res, next) => { 
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -119,7 +119,7 @@ exports.postUser = async (req, res, next) => {
 };
 
 
-exports.getUser = (req, res, next) => {
+const getUser = (req, res, next) => {
   const userId = req.params.userId;
 
   User.findById(userId)
@@ -142,7 +142,7 @@ exports.getUser = (req, res, next) => {
     });
 };
 
-exports.editUser = async (req, res, next) => { 
+const editUser = async (req, res, next) => { 
   const userId = req.params.userId;
   const errors = validationResult(req);
 
@@ -198,7 +198,7 @@ exports.editUser = async (req, res, next) => {
 };
 
 
-exports.deleteUser = (req, res, next) => {
+const deleteUser = (req, res, next) => {
   const userId = req.params.userId;
 
   if (userId === req.userId) {
@@ -265,7 +265,7 @@ exports.deleteUser = (req, res, next) => {
     });
 };
 
-exports.getJobs = (req, res, next) => {
+const getJobs = (req, res, next) => {
   Job.find()
     .lean()
     .then((jobs) => {
@@ -282,7 +282,7 @@ exports.getJobs = (req, res, next) => {
     });
 };
 
-exports.addJob = (req, res, next) => {
+const addJob = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -316,7 +316,7 @@ exports.addJob = (req, res, next) => {
     });
 };
 
-exports.getJob = (req, res, next) => {
+const getJob = (req, res, next) => {
   const jobId = req.params.jobId;
 
   Job.findById(jobId)
@@ -339,7 +339,7 @@ exports.getJob = (req, res, next) => {
     });
 };
 
-exports.editJob = (req, res, next) => {
+const editJob = (req, res, next) => {
   const jobId = req.params.jobId;
   const errors = validationResult(req);
 
@@ -366,7 +366,7 @@ exports.editJob = (req, res, next) => {
     });
 };
 
-exports.deleteJob = (req, res, next) => {
+const deleteJob = (req, res, next) => {
   const jobId = req.params.jobId;
   let providerId;
   let resumes = [];
@@ -410,3 +410,19 @@ exports.deleteJob = (req, res, next) => {
       next(err);
     });
 };
+
+module.exports = {
+  getStats,
+  getRecent,
+  getUsers,
+  postUser,
+  getUser,
+  editUser,
+  deleteUser,
+  getJobs,
+  addJob,
+  getJob,
+  editJob,
+  deleteJob,
+};
+

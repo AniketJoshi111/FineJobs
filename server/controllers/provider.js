@@ -8,7 +8,18 @@ const User = require("../models/user");
 
 const { clearResume } = require("../util/helper");
 
-exports.getStats = (req, res, next) => {
+const { validationResult } = require("express-validator");
+const fs = require("fs");
+const path = require("path");
+
+const Job = require("../models/job");
+const Applicant = require("../models/applicant");
+const User = require("../models/user");
+
+const { clearResume } = require("../util/helper");
+
+// Controllers
+const getStats = (req, res, next) => {
   let jobsCount = 0;
   let applicantsCount = 0;
   Job.find({ providerId: req.userId })
@@ -25,35 +36,29 @@ exports.getStats = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.getRecents = (req, res, next) => {
+const getRecents = (req, res, next) => {
   Job.find({ providerId: req.userId })
     .sort({ createdAt: -1 })
     .limit(3)
     .lean()
     .then((jobs) => {
-      return res
-        .status(200)
-        .json({
-          message: "Successfully fetched the recent jobs",
-          recentJobs: jobs,
-        });
+      return res.status(200).json({
+        message: "Successfully fetched the recent jobs",
+        recentJobs: jobs,
+      });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.getJobs = (req, res, next) => {
+const getJobs = (req, res, next) => {
   Job.find({ providerId: req.userId })
     .lean()
     .then((jobs) => {
@@ -63,16 +68,13 @@ exports.getJobs = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.addJob = (req, res, next) => {
+const addJob = (req, res, next) => {
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     const error = new Error("Validation failed");
     error.statusCode = 422;
@@ -95,18 +97,16 @@ exports.addJob = (req, res, next) => {
       user.jobsPosted.push(jobId);
       return user.save();
     })
-    .then((result) => {
+    .then(() => {
       res.status(201).json({ message: "Job Added Successfully" });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.getJob = (req, res, next) => {
+const getJob = (req, res, next) => {
   const jobId = req.params.jobId;
 
   Job.findOne({ _id: jobId, providerId: req.userId })
@@ -117,19 +117,15 @@ exports.getJob = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
-      res
-        .status(200)
-        .json({ message: "Fetched the job Successfully", job: job });
+      res.status(200).json({ message: "Fetched the job Successfully", job });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.editJob = (req, res, next) => {
+const editJob = (req, res, next) => {
   const jobId = req.params.jobId;
   const errors = validationResult(req);
 
@@ -146,19 +142,19 @@ exports.editJob = (req, res, next) => {
     .then((data) => {
       if (!data) {
         res.status(404).json({
-          message: `Cannot update job with id=${id}. Maybe job was not found!`,
+          message: `Cannot update job with id=${jobId}. Maybe job was not found!`,
         });
-      } else res.status(200).json({ message: "Job was updated successfully." });
+      } else {
+        res.status(200).json({ message: "Job was updated successfully." });
+      }
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.deleteJob = (req, res, next) => {
+const deleteJob = (req, res, next) => {
   const jobId = req.params.jobId;
   let resumes = [];
   let applicants = [];
@@ -175,7 +171,7 @@ exports.deleteJob = (req, res, next) => {
         { $pull: { jobsPosted: jobId } }
       );
     })
-    .then((result) => {
+    .then(() => {
       return Applicant.find({ jobId: jobId, providerId: req.userId }).then(
         (docs) => {
           docs.forEach((doc) => resumes.push(doc.resume));
@@ -183,35 +179,28 @@ exports.deleteJob = (req, res, next) => {
         }
       );
     })
-    .then((result) => {
-      return Applicant.deleteMany({ _id: { $in: applicants } });
-    })
-    .then((result) => {
+    .then(() => Applicant.deleteMany({ _id: { $in: applicants } }))
+    .then(() => {
       resumes.forEach((resume) => clearResume(resume));
-      res.json({
-        message: "Job record was deleted successfully!",
-      });
+      res.json({ message: "Job record was deleted successfully!" });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.getApplicantsForJob = (req, res, next) => {
+const getApplicantsForJob = (req, res, next) => {
   const jobId = req.params.jobId;
   const providerId = req.userId;
 
   Applicant.find({
-    providerId: providerId,
-    jobId: jobId,
+    providerId,
+    jobId,
     status: { $regex: "Applied", $options: "i" },
   })
     .populate("userId", "name")
     .lean()
-
     .then((applicants) => {
       if (!applicants) {
         return res
@@ -220,28 +209,26 @@ exports.getApplicantsForJob = (req, res, next) => {
       }
       return res.status(200).json({
         message: "Successfully fetched the applicants",
-        applicants: applicants,
+        applicants,
       });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
-exports.getShortlistsForJob = (req, res, next) => {
+
+const getShortlistsForJob = (req, res, next) => {
   const jobId = req.params.jobId;
   const providerId = req.userId;
 
   Applicant.find({
-    providerId: providerId,
-    jobId: jobId,
+    providerId,
+    jobId,
     status: { $regex: "Shortlisted", $options: "i" },
   })
     .populate("userId", "name email")
     .lean()
-
     .then((applicants) => {
       if (!applicants) {
         return res
@@ -254,14 +241,12 @@ exports.getShortlistsForJob = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.getApplicantResume = (req, res, next) => {
+const getApplicantResume = (req, res, next) => {
   const applicantId = req.params.applicantItemId;
   Applicant.findOne({ _id: applicantId, providerId: req.userId })
     .lean()
@@ -269,25 +254,20 @@ exports.getApplicantResume = (req, res, next) => {
       if (!applicant) {
         return res.status(404).json({ message: "Applicant not found" });
       }
-      const resumeFile = applicant.resume;
-      const resumePath = path.join(resumeFile);
+      const resumePath = path.join(applicant.resume);
       fs.readFile(resumePath, (err, data) => {
-        if (err) {
-          return next(err);
-        }
+        if (err) return next(err);
         res.setHeader("Content-type", "application/pdf");
         res.send(data);
       });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.shortlistApplicant = (req, res, next) => {
+const shortlistApplicant = (req, res, next) => {
   const applicantItemId = req.params.applicantItemId;
   Applicant.findById({ _id: applicantItemId })
     .then((applicant) => {
@@ -305,16 +285,15 @@ exports.shortlistApplicant = (req, res, next) => {
       applicant.status = "Shortlisted";
       return applicant.save();
     })
-    .then((result) => {
+    .then(() => {
       res.status(200).json({ message: "Shortlisted the candidate!" });
     })
     .catch((err) => {
-      // console.log(err);
       next(err);
     });
 };
 
-exports.rejectApplicant = (req, res, next) => {
+const rejectApplicant = (req, res, next) => {
   const applicantItemId = req.params.applicantItemId;
 
   Applicant.findById(applicantItemId)
@@ -330,39 +309,34 @@ exports.rejectApplicant = (req, res, next) => {
       clearResume(applicant.resume);
       return Applicant.findByIdAndDelete(applicantItemId);
     })
-    .then((result) => {
+    .then(() => {
       return res
         .status(200)
         .json({ message: "Applicant rejected successfully!" });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      if (!err.statusCode) err.statusCode = 500;
       next(err);
     });
 };
 
-exports.postShortlist = async (req, res, next) => {
+const postShortlist = async (req, res, next) => {
   const applicantId = req.params.applicantId;
 
   try {
-  
     const applicant = await Applicant.findById(applicantId)
-      .populate('userId') 
-      .populate('jobId');  
+      .populate("userId")
+      .populate("jobId");
 
     if (!applicant) {
-      const error = new Error('Applicant not found.');
+      const error = new Error("Applicant not found.");
       error.statusCode = 404;
       throw error;
     }
 
-    // 2. Update the applicant's status
-    applicant.status = 'shortlisted';
+    applicant.status = "shortlisted";
     await applicant.save();
 
-    
     if (applicant.userId && applicant.userId.email) {
       await transporter.sendMail({
         to: applicant.userId.email,
@@ -373,16 +347,32 @@ exports.postShortlist = async (req, res, next) => {
           <p>We are pleased to inform you that you have been shortlisted for the position of <strong>${applicant.jobId.title}</strong>.</p>
           <p>The hiring manager will be in touch with the next steps soon.</p>
           <p>Best regards,<br/>The Hiring Team</p>
-        `
+        `,
       });
     }
 
-    res.status(200).json({ message: 'Applicant shortlisted successfully and email sent.' });
-
+    res
+      .status(200)
+      .json({ message: "Applicant shortlisted successfully and email sent." });
   } catch (err) {
-    if (!err.statusCode) {
-      err.statusCode = 500;
-    }
+    if (!err.statusCode) err.statusCode = 500;
     next(err);
   }
+};
+
+// Grouped export
+module.exports = {
+  getStats,
+  getRecents,
+  getJobs,
+  addJob,
+  getJob,
+  editJob,
+  deleteJob,
+  getApplicantsForJob,
+  getShortlistsForJob,
+  getApplicantResume,
+  shortlistApplicant,
+  rejectApplicant,
+  postShortlist,
 };
