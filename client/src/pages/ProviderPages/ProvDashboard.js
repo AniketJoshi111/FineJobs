@@ -52,7 +52,6 @@ export default function ProvDashboard() {
   return (
     <div>
       <ProviderCards stats={stats} />
-      {/* <CountCard /> */}
       {showSpinner && <SpinnerComponent />}
       {!showSpinner && <Table1 jobData={jobs} />}
     </div>

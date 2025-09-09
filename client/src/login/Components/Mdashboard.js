@@ -12,15 +12,6 @@ function Mdashboard() {
   const authToken = localStorage.getItem("token");
   const redToken = useSelector(selectauthToken);
 
-  // if(redToken == {}){
-  //   if(authToken){
-  //     dispatch({type:"SETAUTHTOKEN",data:authToken});
-  //   }
-  // }
-
-  // if (authToken !== null && redAuthToken == {}) {
-  //   dispatch({ type: "SETAUTHTOKEN", data: authToken });
-  // }
 
   if (authToken) {
     const redAuthToken = jwtDecode(authToken);
