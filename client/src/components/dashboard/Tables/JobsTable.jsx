@@ -2,7 +2,6 @@ import React from "react";
 import classes from "./UserTable.module.css";
 import { Table, Row, Col, Button } from "react-bootstrap";
 import JobItem from "./JobItem";
-// import jobData from "../../../store/jobData.json";
 import { useNavigate } from "react-router-dom";
 const JobsTable = (props) => {
   const navigate = useNavigate();

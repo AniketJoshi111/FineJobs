@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import AdminCards from "../../components/dashboard/Counters/AdminCards";
-// import AdminCounters from "../components/dashboard/Counters/AdminCounters";
 import JobsTable from "../../components/dashboard/Tables/JobsTable";
 import UserTable from "../../components/dashboard/Tables/UserTable";
 import axios from "axios";
